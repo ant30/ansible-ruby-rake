@@ -1,0 +1,9 @@
+# Module for ansible rake module integration tests.
+
+namespace :poc do
+  desc 'Env var present'
+  task :var_present, [:envvar] do |_, args|
+    abort("The var #{args.envvar} is not present in current environment") unless ENV.include?(args.envvar)
+    puts ENV[args.envvar]
+  end
+end

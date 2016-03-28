@@ -1,0 +1,117 @@
+---
+
+- hosts: localhost
+  connection: local
+
+  vars:
+    rake_poc_path: "{{ ansible_env['PWD'] }}"
+
+  tasks:
+    - name: Check VARIABLE_1 exists
+      ruby_rake:
+        command: poc:var_present[VARIABLE_1]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+
+    - name: Check VARIABLE_2 exists (multiple env vars defined)
+      ruby_rake:
+        command: poc:var_present[VARIABLE_2]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+          VARIABLE_2: VALUE_2
+          VARIABLE_3: VALUE_3
+
+    - name: Register value of VARIABLE_1
+      ruby_rake:
+        command: poc:var_present[VARIABLE_1]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+      register: variable_1
+
+    - name: Check value of registered VARIABLE_1
+      fail: msg="value {{ variable_1.stdout }} is not correct"
+      when: variable_1.stdout|trim != "VALUE_1"
+
+    - name: Check variables interpolation case 1
+      ruby_rake:
+        command: poc:var_present[VARIABLE_2]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+          VARIABLE_2: VALUE_1$USERNAME
+          VARIABLE_3: VALUE_3
+
+    - name: Check variables interpolation case 2
+      ruby_rake:
+        command: poc:var_present[VARIABLE_2]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+          VARIABLE_2: VALUE_1${USERNAME}
+          VARIABLE_3: VALUE_3
+
+    - name: Check variables interpolation case 3
+      ruby_rake:
+        command: poc:var_present[VARIABLE_2]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+          VARIABLE_2: $USERNAME
+          VARIABLE_3: VALUE_3
+
+    - name: Check variables interpolation case 4
+      ruby_rake:
+        command: poc:var_present[VARIABLE_2]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+          VARIABLE_2: VALUE_1${USERNAME}__AA
+          VARIABLE_3: VALUE_3
+
+    - name: Check variables interpolation case 5
+      ruby_rake:
+        command: poc:var_present[VARIABLE_2]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+          VARIABLE_2: VALUE_1$USERNAME-${PWD}_AA
+          VARIABLE_3: VALUE_3
+
+    - name: Check VARIABLE_10 does not exists but capture error
+      ruby_rake:
+        command: poc:var_present[VARIABLE_10]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+      ignore_errors: true
+      register: variable_10
+
+    - name: Check variable_10 status
+      fail: msg="VARIABLE_10 not failed"
+      when: variable_10|success
+
+    - name: Check VARIABLE_10 does not exists (Should abort the script in normal execution)
+      ruby_rake:
+        command: poc:var_present[VARIABLE_10]
+        app_path: "{{rake_poc_path}}/ruby_rake_module"
+        ruby_context: chruby
+        environment:
+          VARIABLE_1: VALUE_1
+      register: breaker_failed
+      ignore_errors: true
+
+    - name: Check breaker_failed status
+      fail: msg="breaker_failed failed because it is success"
+      when: breaker_failed|success
