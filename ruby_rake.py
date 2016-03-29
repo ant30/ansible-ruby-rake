@@ -86,6 +86,9 @@ RE_VAR_SEARCHERS = [
 
 
 def _interpolate_env_var(value):
+    """ We want to interpolate env vars to allow to execute the rake in a secure
+        shell
+    """
     for var_searcher in RE_VAR_SEARCHERS:
         searched = var_searcher.findall(value)
         for envvar in searched:
@@ -95,11 +98,14 @@ def _interpolate_env_var(value):
 
 
 def _load_chruby(module):
+    # TODO: This should be change to be execute out of the rake and capture
+    # environment vars. Otherwise this could be incusecure to execute.
     app_path = os.path.expanduser(module.params['app_path'])
     return ("source /usr/local/share/chruby/chruby.sh ; "
             "chruby $(cat {}/.ruby-version) ; ".format(app_path))
 
 
+# TODO: Implements ruby contexts for rvm, rbenv
 RUBY_CONTEXTS = {
     'chruby': _load_chruby,
 }
